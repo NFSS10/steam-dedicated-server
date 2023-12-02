@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::path::PathBuf;
 use std::process::Command;
 
 use menu_rs::{Menu, MenuOption};
@@ -36,7 +37,12 @@ enum GameMode {
 
 fn start_server(mode: GameMode) {
     if let Err(err) = _start_server(mode) {
-        eprintln!("Error running server: {}", err);
+        let msg = format!(
+            "{} {}",
+            "Error running the server!",
+            "Make sure the server is installed before trying to run it."
+        );
+        eprintln!("{} Error: {}", msg, err);
     }
 }
 
@@ -47,15 +53,26 @@ fn install_server() {
 }
 
 fn _start_server(mode: GameMode) -> Result<(), Box<dyn Error>> {
+    let args = match mode {
+        GameMode::Competitive => "+game_type 0 +game_mode 1 +mapgroup mg_active +map de_dust2",
+        GameMode::Wingman => "+game_type 0 +game_mode 2 +mapgroup mg_active +map de_dust2",
+        GameMode::Casual => "+game_type 0 +game_mode 0 +mapgroup mg_active +map de_dust2",
+        GameMode::Deathmatch => "+game_type 1 +game_mode 2 +mapgroup mg_active +map de_dust2",
+        GameMode::Custom => "+game_type 3 +game_mode 0 +mapgroup mg_active +map de_dust2",
+    };
+
+    let server_dir_path = server_path();
+
+    println!("Starting server...");
+    println!("Args: {}", args);
+
     // TODO
 
     Ok(())
 }
 
 fn _install_server() -> Result<(), Box<dyn Error>> {
-    // builds path to the CS2 server folder
-    let mut server_dir_path = get_app_dir_path().expect("Failed to get the application path");
-    server_dir_path.push("cs2-server");
+    let server_dir_path = server_path();
 
     // builds install arguments
     let args = [
@@ -74,4 +91,11 @@ fn _install_server() -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
+}
+
+fn server_path() -> PathBuf {
+    // builds path to the CS2 server folder
+    let mut server_dir_path = get_app_dir_path().expect("Failed to get the application path");
+    server_dir_path.push("cs2-server");
+    return server_dir_path;
 }
