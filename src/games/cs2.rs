@@ -1,5 +1,7 @@
 use menu_rs::{Menu, MenuOption};
 
+use crate::utils::paths::get_app_dir_path;
+
 pub fn menu() {
     let menu = Menu::new(vec![
         MenuOption::new("Run server", run_server_menu).hint("Runs the server"),
@@ -19,6 +21,8 @@ pub fn run_server_menu() {
     menu.show();
 }
 
+const CS2_APP_ID: u32 = 730;
+
 enum GameMode {
     Competitive,
     Wingman,
@@ -32,5 +36,17 @@ fn start_server(mode: GameMode) {
 }
 
 fn install_server() {
-    // TODO
+    // builds path to the CS2 server folder
+    let mut server_dir_path = get_app_dir_path().expect("Failed to get the application path");
+    server_dir_path.push("cs2-server");
+
+    let args = [
+        &format!("+force_install_dir {}", server_dir_path.to_str().unwrap()),
+        "+login anonymous",
+        &format!("+app_update {} validate", CS2_APP_ID),
+        "+quit",
+    ];
+
+    println!("Installing CS2 server...");
+    println!("TODO: {:?}", args);
 }

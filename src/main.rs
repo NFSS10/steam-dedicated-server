@@ -1,6 +1,7 @@
 #![allow(clippy::needless_return)]
 
 mod games;
+mod utils;
 
 use games::cs2::menu;
 use menu_rs::{Menu, MenuOption};
