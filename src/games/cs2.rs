@@ -1,10 +1,11 @@
 use std::error::Error;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use std::process::Command;
 
 use menu_rs::{Menu, MenuOption};
 
 use crate::utils::paths::{get_app_dir_path, get_steamcmd_exe_path};
+use crate::utils::config::load_commands;
 
 pub fn menu() {
     let menu = Menu::new(vec![
@@ -26,6 +27,8 @@ pub fn run_server_menu() {
 }
 
 const CS2_APP_ID: u32 = 730;
+const COMMANDS_FILE_PATH: &str = "./resources/cs2/config/commands.txt";
+
 
 enum GameMode {
     Competitive,
@@ -66,6 +69,11 @@ fn _start_server(mode: GameMode) -> Result<(), Box<dyn Error>> {
     println!("Starting server...");
     println!("Args: {}", args);
 
+    // load commands from file
+    let path = Path::new(COMMANDS_FILE_PATH);
+    let commands_args = load_commands(&path)?;
+    let commands_args = commands_args.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
+    
     if cfg!(windows) {
         let executable_path = server_dir_path.join("game").join("bin").join("win64");
         Command::new("cmd")
