@@ -132,3 +132,40 @@ fn server_path() -> PathBuf {
     server_dir_path.push("cs2-server");
     return server_dir_path;
 }
+
+fn build_exec_cfg() -> Result<String, Box<dyn Error>> {
+    let filename = "__exec_custom.cfg";
+    let path = Path::new(EXEC_FILE_PATH);
+    if !path.exists() {
+        println!("Can't find exec.txt file, skipping exec .cfg creation");
+        return Ok(filename.to_owned());
+    }
+
+    // loads cfgs file list
+    let cfgs_dir_path = Path::new("./resources").join("cs2").join("cfgs");
+    let mut exec_cfg_values = Vec::new();
+    let reader = load_file(&path)?;
+    for line in reader.lines() {
+        let cfg_file = line?;
+        let cfg_file_path = cfgs_dir_path.join(cfg_file);
+        println!("Loading .cfg file: {:?}", cfg_file_path);
+
+        let mut values = load_cfg(&cfg_file_path)?;
+        exec_cfg_values.append(&mut values);
+    }
+
+    // builds exec cfg file path
+    let server_path = server_path();
+    let server_cfgs_dir_path = server_path.join("game").join("csgo").join("cfg");
+    let exec_cfg_path = server_cfgs_dir_path.join(filename);
+
+    // deletes custom cfg if already exists
+    if exec_cfg_path.exists() {
+        fs::remove_file(&exec_cfg_path)?;
+    }
+
+    // creates custom cfg file
+    fs::write(&exec_cfg_path, exec_cfg_values.join("\n"))?;
+
+    Ok(filename.to_owned())
+}
