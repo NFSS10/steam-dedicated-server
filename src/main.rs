@@ -28,9 +28,7 @@ fn main() {
 }
 
 fn games_menu() {
-    let menu = Menu::new(vec![
-        MenuOption::new("Counter Strike 2", menu).hint("Runs the server")
-    ]);
+    let menu = Menu::new(vec![MenuOption::new("Counter Strike 2", menu)]);
     menu.show();
 }
 
