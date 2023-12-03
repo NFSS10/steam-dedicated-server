@@ -72,7 +72,7 @@ pub fn load_cfg(file_path: &Path) -> Result<Vec<String>, Box<dyn Error>> {
     Ok(entries)
 }
 
-fn load_file(file_path: &Path) -> Result<BufReader<File>, Box<(dyn Error + 'static)>> {
+pub fn load_file(file_path: &Path) -> Result<BufReader<File>, Box<(dyn Error + 'static)>> {
     if !file_path.exists() {
         Err("Error loading file")?;
     }
