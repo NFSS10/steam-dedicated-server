@@ -66,7 +66,26 @@ fn _start_server(mode: GameMode) -> Result<(), Box<dyn Error>> {
     println!("Starting server...");
     println!("Args: {}", args);
 
-    // TODO
+    if cfg!(windows) {
+        let executable_path = server_dir_path.join("game").join("bin").join("win64");
+        Command::new("cmd")
+            .current_dir(executable_path)
+            .args(["/c", "cs2.exe", "-dedicated"])
+            // TODO .arg(args)
+            .status()?;
+    } else if cfg!(unix) {
+        let executable_path = server_dir_path
+            .join("game")
+            .join("bin")
+            .join("linuxsteamrt64");
+        Command::new("./cs2")
+            .current_dir(executable_path)
+            .args(["-dedicated"])
+            // TODO args
+            .status()?;
+    } else {
+        Err("OS not supported")?;
+    }
 
     Ok(())
 }
