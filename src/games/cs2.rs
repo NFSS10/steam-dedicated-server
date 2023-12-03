@@ -1,10 +1,12 @@
 use std::error::Error;
+use std::fs;
+use std::io::BufRead;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use menu_rs::{Menu, MenuOption};
 
-use crate::utils::config::load_commands;
+use crate::utils::config::{load_cfg, load_commands, load_file};
 use crate::utils::paths::{get_app_dir_path, get_steamcmd_exe_path};
 
 pub fn menu() {
@@ -28,6 +30,7 @@ pub fn run_server_menu() {
 
 const CS2_APP_ID: u32 = 730;
 const COMMANDS_FILE_PATH: &str = "./resources/cs2/config/commands.txt";
+const EXEC_FILE_PATH: &str = "./resources/cs2/config/exec.txt";
 
 enum GameMode {
     Competitive,
@@ -55,18 +58,38 @@ fn install_server() {
 }
 
 fn _start_server(mode: GameMode) -> Result<(), Box<dyn Error>> {
-    let args = match mode {
-        GameMode::Competitive => "+game_type 0 +game_mode 1 +mapgroup mg_active +map de_dust2",
-        GameMode::Wingman => "+game_type 0 +game_mode 2 +mapgroup mg_active +map de_dust2",
-        GameMode::Casual => "+game_type 0 +game_mode 0 +mapgroup mg_active +map de_dust2",
-        GameMode::Deathmatch => "+game_type 1 +game_mode 2 +mapgroup mg_active +map de_dust2",
-        GameMode::Custom => "+game_type 3 +game_mode 0 +mapgroup mg_active +map de_dust2",
+    let mode_args = match mode {
+        GameMode::Competitive => [
+            "+game_type 0",
+            "+game_mode 1",
+            "+mapgroup mg_active",
+            "+map de_dust2",
+        ],
+        GameMode::Wingman => [
+            "+game_type 0",
+            "+game_mode 2",
+            "+mapgroup mg_active",
+            "+map de_dust2",
+        ],
+        GameMode::Casual => [
+            "+game_type 0",
+            "+game_mode 0",
+            "+mapgroup mg_active",
+            "+map de_dust2",
+        ],
+        GameMode::Deathmatch => [
+            "+game_type 1",
+            "+game_mode 2",
+            "+mapgroup mg_active",
+            "+map de_dust2",
+        ],
+        GameMode::Custom => [
+            "+game_type 3",
+            "+game_mode 0",
+            "+mapgroup mg_active",
+            "+map de_dust2",
+        ],
     };
-
-    let server_dir_path = server_path();
-
-    println!("Starting server...");
-    println!("Args: {}", args);
 
     // load commands from file
     let path = Path::new(COMMANDS_FILE_PATH);
@@ -76,9 +99,23 @@ fn _start_server(mode: GameMode) -> Result<(), Box<dyn Error>> {
         .map(|s| s.as_str())
         .collect::<Vec<&str>>();
 
+    // builds exec cfg file
+    let exec_cfg_file = build_exec_cfg()?;
+    let exec_arg = format!("+exec {}", exec_cfg_file);
+
+    // builds server arguments
+    let mut run_args = commands_args;
+    run_args.extend_from_slice(mode_args.as_slice());
+    run_args.push(&exec_arg);
+
+    println!("Starting server...");
+    println!("Args: {:?}", run_args);
+
+    let server_dir_path = server_path();
+
     if cfg!(windows) {
         let mut args = vec!["/c", "cs2.exe", "-dedicated"];
-        args.extend_from_slice(commands_args.as_slice());
+        args.extend_from_slice(run_args.as_slice());
 
         let executable_path = server_dir_path.join("game").join("bin").join("win64");
         Command::new("cmd")
@@ -87,7 +124,7 @@ fn _start_server(mode: GameMode) -> Result<(), Box<dyn Error>> {
             .status()?;
     } else if cfg!(unix) {
         let mut args = vec!["-dedicated"];
-        args.extend_from_slice(commands_args.as_slice());
+        args.extend_from_slice(run_args.as_slice());
 
         let executable_path = server_dir_path
             .join("game")
