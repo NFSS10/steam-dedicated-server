@@ -1,11 +1,11 @@
 use std::error::Error;
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use menu_rs::{Menu, MenuOption};
 
-use crate::utils::paths::{get_app_dir_path, get_steamcmd_exe_path};
 use crate::utils::config::load_commands;
+use crate::utils::paths::{get_app_dir_path, get_steamcmd_exe_path};
 
 pub fn menu() {
     let menu = Menu::new(vec![
@@ -28,7 +28,6 @@ pub fn run_server_menu() {
 
 const CS2_APP_ID: u32 = 730;
 const COMMANDS_FILE_PATH: &str = "./resources/cs2/config/commands.txt";
-
 
 enum GameMode {
     Competitive,
@@ -72,24 +71,31 @@ fn _start_server(mode: GameMode) -> Result<(), Box<dyn Error>> {
     // load commands from file
     let path = Path::new(COMMANDS_FILE_PATH);
     let commands_args = load_commands(&path)?;
-    let commands_args = commands_args.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
-    
+    let commands_args = commands_args
+        .iter()
+        .map(|s| s.as_str())
+        .collect::<Vec<&str>>();
+
     if cfg!(windows) {
+        let mut args = vec!["/c", "cs2.exe", "-dedicated"];
+        args.extend_from_slice(commands_args.as_slice());
+
         let executable_path = server_dir_path.join("game").join("bin").join("win64");
         Command::new("cmd")
             .current_dir(executable_path)
-            .args(["/c", "cs2.exe", "-dedicated"])
-            // TODO .arg(args)
+            .args(args)
             .status()?;
     } else if cfg!(unix) {
+        let mut args = vec!["-dedicated"];
+        args.extend_from_slice(commands_args.as_slice());
+
         let executable_path = server_dir_path
             .join("game")
             .join("bin")
             .join("linuxsteamrt64");
         Command::new("./cs2")
             .current_dir(executable_path)
-            .args(["-dedicated"])
-            // TODO args
+            .args(args)
             .status()?;
     } else {
         Err("OS not supported")?;
