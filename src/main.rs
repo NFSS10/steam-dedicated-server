@@ -13,7 +13,7 @@ use utils::paths::get_steamcmd_exe_path;
 
 fn main() {
     // checks if SteamCMD is set up correctly
-    match verify_os() {
+    match verify_steamcmd() {
         Ok(_) => {}
         Err(_) => println!("Setup required. Please ensure that SteamCMD is correctly set up."),
     }
@@ -32,7 +32,7 @@ fn games_menu() {
     menu.show();
 }
 
-fn verify_os() -> Result<(), Box<dyn Error>> {
+fn verify_steamcmd() -> Result<(), Box<dyn Error>> {
     if cfg!(windows) {
         let steacmd_exe_path = get_steamcmd_exe_path()?;
         if !steacmd_exe_path.exists() {
