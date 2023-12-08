@@ -1,0 +1,99 @@
+name: Build and release
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Rust setup
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Create artifacts folder
+        shell: pwsh
+        run: New-Item -Path "windows-artifacts" -ItemType Directory
+
+      - name: Create portable artifact in the artifacts folder
+        shell: pwsh
+        run: ./.github/scripts/windows/zip-folder.ps1 windows-artifacts
+
+      - name: Sanity check
+        shell: pwsh
+        run: dir windows-artifacts
+
+      - name: Cache artifacts
+        uses: actions/cache@v3
+        with:
+          path: ./windows-artifacts
+          key: windows-artifacts-cache
+          enableCrossOsArchive: true
+
+  build-ubuntu:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Rust setup
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Move generated artifacts to artifacts folder
+        run: |
+          mkdir ubuntu-artifacts
+          mv ./target/release/steam-dedicated-server ./ubuntu-artifacts/server-linux-x64
+          chmod +x ./ubuntu-artifacts/server-linux-x64
+
+      - name: Cache artifacts
+        uses: actions/cache@v3
+        with:
+          path: ./ubuntu-artifacts
+          key: ubuntu-artifacts-cache
+          enableCrossOsArchive: true
+
+  create-release:
+    needs: [build-windows, build-ubuntu]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Restore Windows artifacts
+        uses: actions/cache@v3
+        with:
+          path: ./windows-artifacts
+          key: windows-artifacts-cache
+
+      - name: Restore Ubuntu artifacts
+        uses: actions/cache@v3
+        with:
+          path: ./ubuntu-artifacts
+          key: ubuntu-artifacts-cache
+
+      - name: Get tag name
+        run: echo "TAG=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+     
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ env.TAG }}
+          files: |
+            ./windows-artifacts/*
+            ./ubuntu-artifacts/*
